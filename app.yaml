@@ -1,0 +1,66 @@
+name: accunite-task-management
+region: nyc
+services:
+  - name: api
+    github:
+      repo: your-username/accunite-task-management
+      branch: main
+      deploy_on_push: true
+    source_dir: /backend
+    build_command: npm install && npm run build
+    run_command: npm start
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    http_port: 5000
+    routes:
+      - path: /api
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "5000"
+      - key: JWT_SECRET
+        value: ${JWT_SECRET}
+        scope: RUN_TIME
+        type: SECRET
+      - key: DATABASE_PATH
+        value: /app/data/database.sqlite
+      - key: EMAIL_HOST
+        value: ${EMAIL_HOST}
+        scope: RUN_TIME
+        type: SECRET
+      - key: EMAIL_PORT
+        value: ${EMAIL_PORT}
+        scope: RUN_TIME
+        type: SECRET
+      - key: EMAIL_USER
+        value: ${EMAIL_USER}
+        scope: RUN_TIME
+        type: SECRET
+      - key: EMAIL_PASS
+        value: ${EMAIL_PASS}
+        scope: RUN_TIME
+        type: SECRET
+      - key: EMAIL_FROM
+        value: ${EMAIL_FROM}
+        scope: RUN_TIME
+        type: SECRET
+
+  - name: frontend
+    github:
+      repo: your-username/accunite-task-management
+      branch: main
+      deploy_on_push: true
+    source_dir: /frontend
+    build_command: npm install && npm run build
+    run_command: npm run preview
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    http_port: 3000
+    routes:
+      - path: /
+    envs:
+      - key: NODE_ENV
+        value: production
