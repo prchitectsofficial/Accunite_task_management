@@ -155,7 +155,12 @@ const Contact = () => {
               <div style={{ height: 12 }} />
               <div>
                 Email:{' '}
-                <a href={`mailto:${contactInfo.email}`}>{contactInfo.email}</a>
+                {contactInfo.emails.map((email, idx) => (
+                  <span key={email}>
+                    <a href={`mailto:${email}`}>{email}</a>
+                    {idx < contactInfo.emails.length - 1 ? ', ' : null}
+                  </span>
+                ))}
               </div>
             </div>
 

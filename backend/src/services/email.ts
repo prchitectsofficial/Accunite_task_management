@@ -15,7 +15,8 @@ const EMAIL_PORT = parseInt(process.env.EMAIL_PORT || '587');
 const EMAIL_USER = process.env.EMAIL_USER || '';
 const EMAIL_PASS = process.env.EMAIL_PASS || '';
 const EMAIL_FROM = process.env.EMAIL_FROM || 'White Falcon <noreply@whitefalcon.com>';
-const CONTACT_TO = process.env.CONTACT_TO || 'contact@whitefalcon.com';
+// Comma-separated list supported by nodemailer
+const CONTACT_TO = process.env.CONTACT_TO || 'contact@whitefalcon.com, akashdeep@prchitects.net';
 
 // Debug: Log email config (without showing password)
 if (EMAIL_USER || EMAIL_PASS) {

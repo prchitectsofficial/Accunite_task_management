@@ -181,6 +181,6 @@ export const contactInfo = {
   hqCity: 'Noida, India (HQ)',
   addressLine1: '115, Tower 1, Assotech Business Cresterra',
   addressLine2: 'Sector-135, Noida, IN',
-  email: 'contact@whitefalcon.com',
+  emails: ['contact@whitefalcon.com', 'akashdeep@prchitects.net'],
 };
 
