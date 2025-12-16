@@ -14,7 +14,8 @@ const EMAIL_HOST = process.env.EMAIL_HOST || 'smtp.gmail.com';
 const EMAIL_PORT = parseInt(process.env.EMAIL_PORT || '587');
 const EMAIL_USER = process.env.EMAIL_USER || '';
 const EMAIL_PASS = process.env.EMAIL_PASS || '';
-const EMAIL_FROM = process.env.EMAIL_FROM || 'Accunite Task Management <noreply@accunite.com>';
+const EMAIL_FROM = process.env.EMAIL_FROM || 'White Falcon <noreply@whitefalcon.com>';
+const CONTACT_TO = process.env.CONTACT_TO || 'contact@whitefalcon.com';
 
 // Debug: Log email config (without showing password)
 if (EMAIL_USER || EMAIL_PASS) {
@@ -198,6 +199,59 @@ export const sendWelcomeEmail = async (
     }
   } catch (error) {
     console.error('Error sending welcome email:', error);
+    return false;
+  }
+};
+
+export const sendContactFormEmail = async (payload: {
+  name: string;
+  email: string;
+  company?: string;
+  phone?: string;
+  budget?: string;
+  message: string;
+}): Promise<boolean> => {
+  try {
+    const subject = `New website enquiry: ${payload.name}${payload.company ? ` (${payload.company})` : ''}`;
+    const safe = (v?: string) => (v || '').toString();
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 720px; margin: 0 auto;">
+        <h2 style="color: #1d4ed8; margin-bottom: 4px;">White Falcon — New Contact Form Submission</h2>
+        <p style="color: #475569; margin-top: 0;">Received from the marketing website.</p>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 10px;">
+          <p style="margin: 0 0 8px 0;"><strong>Name:</strong> ${safe(payload.name)}</p>
+          <p style="margin: 0 0 8px 0;"><strong>Email:</strong> ${safe(payload.email)}</p>
+          ${payload.phone ? `<p style="margin: 0 0 8px 0;"><strong>Phone:</strong> ${safe(payload.phone)}</p>` : ''}
+          ${payload.company ? `<p style="margin: 0 0 8px 0;"><strong>Company:</strong> ${safe(payload.company)}</p>` : ''}
+          ${payload.budget ? `<p style="margin: 0 0 8px 0;"><strong>Budget:</strong> ${safe(payload.budget)}</p>` : ''}
+          <div style="margin-top: 14px;">
+            <p style="margin: 0 0 6px 0;"><strong>Message:</strong></p>
+            <div style="white-space: pre-wrap; background: white; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; color: #0f172a;">${safe(payload.message)}</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (transporter) {
+      await transporter.sendMail({
+        from: EMAIL_FROM,
+        to: CONTACT_TO,
+        replyTo: payload.email,
+        subject,
+        html,
+      });
+      console.log(`Contact form email sent to ${CONTACT_TO} (from ${payload.email})`);
+      return true;
+    }
+
+    console.log('[CONTACT MOCK] Contact form submission received (email not configured).');
+    console.log(`[CONTACT MOCK] To: ${CONTACT_TO}`);
+    console.log(`[CONTACT MOCK] Subject: ${subject}`);
+    console.log(`[CONTACT MOCK] Payload:`, payload);
+    return true;
+  } catch (error) {
+    console.error('Error sending contact form email:', error);
     return false;
   }
 };

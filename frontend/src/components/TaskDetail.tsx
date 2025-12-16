@@ -75,6 +75,22 @@ const TaskDetail = ({ task: initialTask, assignees, onClose, onRefresh }: TaskDe
   const isAdmin = user?.role === 'admin';
   const isAssignee = task.assignee_id === user?.id;
 
+  if (loading) {
+    return (
+      <div className="task-detail-overlay" onClick={onClose}>
+        <div className="task-detail-content" onClick={(e) => e.stopPropagation()}>
+          <div className="task-detail-header">
+            <h2>Loading…</h2>
+            <button onClick={onClose} className="close-btn">×</button>
+          </div>
+          <div style={{ padding: '1.25rem', color: 'var(--wf-muted)' }}>
+            Fetching task details…
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="task-detail-overlay" onClick={onClose}>
       <div className="task-detail-content" onClick={(e) => e.stopPropagation()}>
@@ -85,6 +101,12 @@ const TaskDetail = ({ task: initialTask, assignees, onClose, onRefresh }: TaskDe
 
         <div className="task-detail-body">
           <div className="task-info-section">
+            {isAdmin && (
+              <div className="info-group">
+                <label>Assignees available:</label>
+                <span>{assignees.length}</span>
+              </div>
+            )}
             <div className="info-group">
               <label>Status:</label>
               <select

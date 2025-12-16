@@ -40,10 +40,6 @@ const TaskCard = ({ task, onEdit, onView, onDelete, onRefresh }: TaskCardProps) 
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    return status.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
-  };
-
   const handleStatusChange = async (newStatus: string) => {
     if (updating) return;
     setUpdating(true);

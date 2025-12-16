@@ -14,6 +14,7 @@ import taskRoutes from './routes/tasks.js';
 import commentRoutes from './routes/comments.js';
 import historyRoutes from './routes/history.js';
 import analyticsRoutes from './routes/analytics.js';
+import contactRoutes from './routes/contact.js';
 
 dotenv.config();
 
@@ -59,7 +60,7 @@ if (process.env.NODE_ENV === 'production') {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Accunite Task Management API' });
+  res.json({ status: 'ok', message: 'White Falcon API' });
 });
 
 // Routes
@@ -69,6 +70,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/contact', contactRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

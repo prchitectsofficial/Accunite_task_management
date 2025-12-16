@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import { Task, User } from '../types';
+import { Task, TaskPriority, User } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import './TaskModal.css';
 
@@ -15,10 +15,16 @@ const TaskModal = ({ task, assignees, onClose, onSave }: TaskModalProps) => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    title: string;
+    description: string;
+    priority: TaskPriority;
+    assignee_id: string;
+    due_date: string;
+  }>({
     title: '',
     description: '',
-    priority: 'normal' as const,
+    priority: 'normal',
     assignee_id: '',
     due_date: '',
   });
@@ -102,7 +108,7 @@ const TaskModal = ({ task, assignees, onClose, onSave }: TaskModalProps) => {
               <select
                 id="priority"
                 value={formData.priority}
-                onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
+                onChange={(e) => setFormData({ ...formData, priority: e.target.value as TaskPriority })}
               >
                 <option value="low">Low</option>
                 <option value="normal">Normal</option>
