@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task Management</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <div>
+          <h1>Task Management</h1>
+          <p class="subtitle">Add, view, edit, and delete tasks.</p>
+        </div>
+        <div class="badge">MySQL + Express</div>
+      </header>
+
+      <section class="card">
+        <h2 id="formTitle">Add Task</h2>
+
+        <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+        <form id="taskForm" novalidate>
+          <!-- Hidden id is used for edit mode -->
+          <input type="hidden" id="taskId" />
+
+          <div class="grid">
+            <div class="field">
+              <label for="name">Name <span class="req">*</span></label>
+              <input id="name" name="name" type="text" placeholder="e.g. Rahul Sharma" />
+              <div class="error" id="nameError"></div>
+            </div>
+
+            <div class="field">
+              <label for="email">Email <span class="req">*</span></label>
+              <input id="email" name="email" type="email" placeholder="e.g. rahul@example.com" />
+              <div class="error" id="emailError"></div>
+            </div>
+
+            <div class="field">
+              <label for="website">Website</label>
+              <input id="website" name="website" type="url" placeholder="e.g. https://example.com" />
+            </div>
+
+            <div class="field">
+              <label for="phone">Phone Number</label>
+              <input id="phone" name="phone" type="tel" placeholder="e.g. +91 98765 43210" />
+            </div>
+
+            <div class="field full">
+              <label for="notes">Notes</label>
+              <textarea id="notes" name="notes" rows="3" placeholder="Optional notes..."></textarea>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="submit" class="btn primary" id="submitBtn">Save Task</button>
+            <button type="button" class="btn" id="cancelEditBtn">Cancel</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="listHeader">
+          <h2>All Tasks</h2>
+          <button type="button" class="btn" id="refreshBtn">Refresh</button>
+        </div>
+
+        <div class="tableWrap">
+          <table class="table" aria-label="Tasks table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Website</th>
+                <th>Phone</th>
+                <th>Notes</th>
+                <th class="actionsCol">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tasksTbody">
+              <tr>
+                <td colspan="6" class="muted">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span>Backend API: <code>/api/tasks</code></span>
+      </footer>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
+
