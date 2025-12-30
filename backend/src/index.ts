@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from './database/database.js';
+import { closeCrawlerDb, getCrawlerDb, isCrawlerDbConfigured } from './database/crawlerDb.js';
+import { ensureCrawlerSchema } from './database/crawlerSchema.js';
 import { initEmailService } from './services/email.js';
 import { initializeFollowUpScheduler } from './services/followUpScheduler.js';
 
@@ -14,6 +16,7 @@ import taskRoutes from './routes/tasks.js';
 import commentRoutes from './routes/comments.js';
 import historyRoutes from './routes/history.js';
 import analyticsRoutes from './routes/analytics.js';
+import crawlerRoutes from './routes/crawler.js';
 
 dotenv.config();
 
@@ -69,6 +72,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/crawler', crawlerRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -80,6 +84,21 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 const startServer = async () => {
   try {
     await db.initialize();
+
+    // Crawler DB (MySQL) init is optional in dev, required in production for crawler features.
+    const crawlerEnabled = (process.env.CRAWLER_ENABLED || 'true').toLowerCase() === 'true';
+    if (crawlerEnabled) {
+      if (!isCrawlerDbConfigured()) {
+        console.warn(
+          'Crawler DB is not configured (set CRAWLER_DB_HOST/USER/NAME). Crawler APIs will return 503.'
+        );
+      } else {
+        const crawlerDb = getCrawlerDb();
+        await ensureCrawlerSchema(crawlerDb);
+        console.log('Crawler MySQL schema is ready');
+      }
+    }
+
     initEmailService();
     initializeFollowUpScheduler();
     
@@ -99,6 +118,7 @@ startServer();
 process.on('SIGINT', async () => {
   console.log('\nShutting down...');
   await db.close();
+  await closeCrawlerDb();
   process.exit(0);
 });
 
