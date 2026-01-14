@@ -5,12 +5,14 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 from playwright.async_api import Browser, Playwright, async_playwright
-from sqlalchemy import select
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.core.database import SessionLocal
+from app.crawlers.blog_crawler import crawl_blog
 from app.models.blog import Blog
-from app.models.crawl_run import CrawlCursor, CrawlRun, utc_now
+from app.models.crawl_run import CommercialLink, CrawlCursor, CrawlRun, utc_now
 from app.utils.url_utils import extract_domain, normalize_url
 
 
@@ -145,28 +147,133 @@ class CrawlerManager:
         return now - timedelta(days=30 * month_limit)
 
     async def _run_loop(self, run_id: str) -> None:
-        """
-        Placeholder crawl loop.
-        वास्तविक discovery/crawl/exports logic अगले step में यहीं implement होगा.
-        """
         try:
-            # Keep browser open; pause uses async sleep loops.
-            while True:
-                # If DB says paused, wait.
-                await asyncio.sleep(0.5)
-                # Exit early if removed from active state externally.
-                active = self.active_crawls.get(run_id)
-                if not active:
+            async with SessionLocal() as db:
+                run = await db.get(CrawlRun, run_id)
+                if not run:
                     return
-                if active.status == "paused":
-                    continue
-                # For now: mark completed immediately (will be replaced by real crawl).
-                active.status = "completed"
-                return
+
+                cutoff = self._utc_cutoff(run.month_limit)
+
+                # Process each blog cursor (bounded concurrency will be added next)
+                q = await db.execute(select(CrawlCursor).where(CrawlCursor.crawl_run_id == run_id))
+                cursors = q.scalars().all()
+
+                for cursor in cursors:
+                    # Pause loop keeps browser open
+                    while self.active_crawls.get(run_id) and self.active_crawls[run_id].status == "paused":
+                        await asyncio.sleep(0.5)
+
+                    cursor.status = "running"
+                    await db.commit()
+
+                    blog = await db.get(Blog, cursor.blog_id)
+                    if not blog:
+                        cursor.status = "failed"
+                        await db.commit()
+                        continue
+
+                    blog_domain = blog.domain
+                    blog_url = blog.url
+
+                    # Global history reuse: if domain previously completed, reuse (skip recrawl)
+                    latest_success = await self._latest_success_run_for_blog(db, blog_id=blog.id)
+                    if latest_success and latest_success != run_id:
+                        await self._reuse_from_history(
+                            db,
+                            *,
+                            cursor=cursor,
+                            reused_from_run_id=latest_success,
+                        )
+                        cursor.status = "reused"
+                        await db.commit()
+                        continue
+
+                    blog.last_attempted_at = utc_now()
+                    await db.commit()
+
+                    await crawl_blog(
+                        browser=self._require_browser(),
+                        db=db,
+                        cursor=cursor,
+                        blog_domain=blog_domain,
+                        blog_url=blog_url,
+                        page_limit=run.page_limit,
+                        cutoff_utc=cutoff,
+                        should_pause=lambda: (
+                            self.active_crawls.get(run_id) is not None and self.active_crawls[run_id].status == "paused"
+                        ),
+                    )
+
+                    blog.last_success_at = utc_now()
+                    cursor.status = "completed"
+                    await db.commit()
+
+                run.status = "completed"
+                run.finished_at = utc_now()
+                await db.commit()
+
+                if run_id in self.active_crawls:
+                    self.active_crawls[run_id].status = "completed"
         except asyncio.CancelledError:
+            return
+        except Exception as e:
+            async with SessionLocal() as db:
+                run = await db.get(CrawlRun, run_id)
+                if run:
+                    run.status = "failed"
+                    run.error_message = str(e)
+                    run.finished_at = utc_now()
+                    await db.commit()
+            if run_id in self.active_crawls:
+                self.active_crawls[run_id].status = "failed"
             return
         finally:
             self._run_tasks.pop(run_id, None)
+
+    def _require_browser(self) -> Browser:
+        if not self._browser:
+            raise RuntimeError("browser_not_initialized")
+        return self._browser
+
+    async def _latest_success_run_for_blog(self, db: AsyncSession, *, blog_id: str) -> str | None:
+        q = await db.execute(
+            select(CrawlRun.id)
+            .join(CrawlCursor, CrawlCursor.crawl_run_id == CrawlRun.id)
+            .where(CrawlCursor.blog_id == blog_id, CrawlRun.status == "completed")
+            .order_by(desc(CrawlRun.finished_at))
+            .limit(1)
+        )
+        return q.scalar_one_or_none()
+
+    async def _reuse_from_history(self, db: AsyncSession, *, cursor: CrawlCursor, reused_from_run_id: str) -> None:
+        # Copy commercial_links from prior run into this run for same blog
+        cursor.reused_from_crawl_run_id = reused_from_run_id
+
+        q = await db.execute(
+            select(CommercialLink).where(
+                CommercialLink.crawl_run_id == reused_from_run_id,
+                CommercialLink.blog_id == cursor.blog_id,
+            )
+        )
+        prior_links = q.scalars().all()
+        for pl in prior_links:
+            db.add(
+                CommercialLink(
+                    crawl_run_id=cursor.crawl_run_id,
+                    blog_id=pl.blog_id,
+                    blog_page_id=pl.blog_page_id,
+                    commercial_site_id=pl.commercial_site_id,
+                    source_url=pl.source_url,
+                    target_url=pl.target_url,
+                    anchor_text=pl.anchor_text,
+                    is_dofollow=pl.is_dofollow,
+                    is_affiliate=pl.is_affiliate,
+                    is_paid=pl.is_paid,
+                    is_commercial=pl.is_commercial,
+                )
+            )
+        cursor.commercial_links_found = len(prior_links)
 
 
 crawler_manager = CrawlerManager()

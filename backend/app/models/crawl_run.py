@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -11,7 +11,7 @@ from app.core.database import Base
 
 def utc_now() -> datetime:
     # Store UTC timezone-aware timestamps (LOCKED)
-    return datetime.now().astimezone()
+    return datetime.now(timezone.utc)
 
 
 class CrawlRun(Base):
