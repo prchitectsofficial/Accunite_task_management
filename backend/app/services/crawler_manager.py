@@ -181,7 +181,6 @@ class CrawlerManager:
                     if latest_success and latest_success != run_id:
                         await self._reuse_from_history(
                             db,
-                            *,
                             cursor=cursor,
                             reused_from_run_id=latest_success,
                         )
