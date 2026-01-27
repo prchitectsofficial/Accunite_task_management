@@ -1,0 +1,29 @@
+# DM Analyzer Requirements
+# Python 3.9+ required
+
+# No external dependencies required for core functionality.
+# The bot uses only Python standard library:
+# - sqlite3: State management
+# - csv: CSV output
+# - json: JSON parsing
+# - datetime: Timestamp handling
+# - re: Regular expressions
+# - hashlib: Content hashing
+# - pathlib: Path handling
+# - dataclasses: Data models
+# - argparse: CLI parsing
+# - logging: Logging
+
+# Optional dependencies for enhanced functionality:
+
+# For running tests
+pytest>=7.0.0
+
+# For type checking
+mypy>=1.0.0
+
+# For code formatting
+black>=23.0.0
+
+# For linting
+ruff>=0.1.0
